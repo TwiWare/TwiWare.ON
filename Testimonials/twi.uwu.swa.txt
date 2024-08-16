@@ -1,0 +1,1552 @@
+--[[
+▀▀█▀▀ ░█──░█ ▀█▀ ░█──░█ ─█▀▀█ ░█▀▀█ ░█▀▀▀ 
+─░█── ░█░█░█ ░█─ ░█░█░█ ░█▄▄█ ░█▄▄▀ ░█▀▀▀ 
+─░█── ░█▄▀▄█ ▄█▄ ░█▄▀▄█ ░█─░█ ░█─░█ ░█▄▄▄
+
+-A Exploit Client By TwiRwal
+ - Regards
+]]--
+print("0?5")
+-- Obfuscated By Werenobf.lua | Created By TwiRwal
+
+Wait(1.2) -- WAIT
+local Library = loadstring(game:HttpGet("https://pastebin.com/raw/vff1bQ9F"))()
+
+--// fractions 
+local OldNameCall = nil
+OldNameCall = hookmetamethod(game, "__namecall", function(...)
+    local Args = {...}
+    if tostring(Self) == "" and Self.ClassName == "RemoteEvent" and getnamecallmethod() == "FireServer" then
+        return
+    end
+    return OldNameCall(...)
+end)
+
+
+local Stats = game:GetService('Stats')
+local Players = game:GetService('Players')
+local RunService = game:GetService('RunService')
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local TweenService = game:GetService('TweenService')
+
+local Nurysium_Util = loadstring(game:HttpGet('https://raw.githubusercontent.com/flezzpe/Nurysium/main/nurysium_helper.lua'))()
+
+local local_player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local nurysium_Data = nil
+local hit_Sound = nil
+
+local closest_Entity = nil
+local parry_remote = nil
+
+getgenv().aura_Enabled = false
+getgenv().hit_sound_Enabled = false
+getgenv().hit_effect_Enabled = false
+getgenv().night_mode_Enabled = false
+getgenv().trail_Enabled = false
+getgenv().self_effect_Enabled = false
+getgenv().kill_effect_Enabled = false
+getgenv().shaders_effect_Enabled = false
+getgenv().ai_Enabled = false
+getgenv().spectate_Enabled = false
+
+local Services = {
+	game:GetService('AdService'),
+	game:GetService('SocialService')
+}
+
+function initializate(dataFolder_name: string)
+	local nurysium_Data = Instance.new('Folder', game:GetService('CoreGui'))
+	nurysium_Data.Name = dataFolder_name
+
+	hit_Sound = Instance.new('Sound', nurysium_Data)
+	hit_Sound.SoundId = 'rbxassetid://6607204501'
+	hit_Sound.Volume = 6
+end
+
+local function get_closest_entity(Object: Part)
+	task.spawn(function()
+		local closest
+		local max_distance = math.huge
+
+		for index, entity in workspace.Alive:GetChildren() do
+			if entity.Name ~= Players.LocalPlayer.Name then
+				local distance = (Object.Position - entity.HumanoidRootPart.Position).Magnitude
+
+				if distance < max_distance then
+					closest_Entity = entity
+					max_distance = distance
+				end
+
+			end
+		end
+
+		return closest_Entity
+	end)
+end
+
+local function get_center()
+	for _, object in workspace.Map:GetDescendants() do
+		if object.Name == 'BALLSPAWN' then
+			return object
+		end
+	end
+end
+
+--// Thanks Aries for this.
+function resolve_parry_Remote()
+	for _, value in Services do
+		local temp_remote = value:FindFirstChildOfClass('RemoteEvent')
+
+		if not temp_remote then
+			continue
+		end
+
+		if not temp_remote.Name:find('\n') then
+			continue
+		end
+
+		parry_remote = temp_remote
+	end
+end
+
+function walk_to(position)
+	local_player.Character.Humanoid:MoveTo(position)
+end
+
+--// kill effect
+
+function play_kill_effect(Part)
+	task.defer(function()
+		local bell = game:GetObjects("rbxassetid://17519762269")[1]
+
+		bell.Name = 'Yeat_BELL'
+		bell.Parent = workspace
+
+		bell.Position = Part.Position - Vector3.new(0, 20, 0)
+		bell:WaitForChild('Sound'):Play()
+
+		TweenService:Create(bell, TweenInfo.new(0.85, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {
+			Position = Part.Position + Vector3.new(0, 10, 0)
+		}):Play()
+
+		task.delay(5, function()
+			TweenService:Create(bell, TweenInfo.new(1.75, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {
+				Position = Part.Position + Vector3.new(0, 100, 0)
+			}):Play()
+		end)
+
+		task.delay(6, function()
+			bell:Destroy()
+		end)
+	end)
+end
+
+task.defer(function()
+	workspace.Alive.ChildRemoved:Connect(function(child)
+		if not workspace.Dead:FindFirstChild(child.Name) and child ~= local_player.Character and #workspace.Alive:GetChildren() > 1 then
+			return
+		end
+
+		if getgenv().kill_effect_Enabled then
+			play_kill_effect(child.HumanoidRootPart)
+		end
+	end)
+end)
+
+--// self effect
+
+task.defer(function()
+	game:GetService("RunService").Heartbeat:Connect(function()
+
+		if not local_player.Character then
+			return
+		end
+
+		if getgenv().self_effect_Enabled then
+			local effect = game:GetObjects("rbxassetid://17519530107")[1]
+
+			effect.Name = 'nurysium_efx'
+
+			if local_player.Character.PrimaryPart:FindFirstChild('nurysium_efx') then
+				return
+			end
+
+			effect.Parent = local_player.Character.PrimaryPart
+		else
+
+			if local_player.Character.PrimaryPart:FindFirstChild('nurysium_efx') then
+				local_player.Character.PrimaryPart['nurysium_efx']:Destroy()
+			end
+		end
+
+	end)
+end)
+
+--// trail
+
+task.defer(function()
+	game:GetService("RunService").Heartbeat:Connect(function()
+
+		if not local_player.Character then
+			return
+		end
+
+		if getgenv().trail_Enabled then
+			local trail = game:GetObjects("rbxassetid://17483658369")[1]
+
+			trail.Name = 'nurysium_fx'
+
+			if local_player.Character.PrimaryPart:FindFirstChild('nurysium_fx') then
+				return
+			end
+
+			local Attachment0 = Instance.new("Attachment", local_player.Character.PrimaryPart)
+			local Attachment1 = Instance.new("Attachment", local_player.Character.PrimaryPart)
+
+			Attachment0.Position = Vector3.new(0, -2.411, 0)
+			Attachment1.Position = Vector3.new(0, 2.504, 0)
+
+			trail.Parent = local_player.Character.PrimaryPart
+			trail.Attachment0 = Attachment0
+			trail.Attachment1 = Attachment1
+		else
+
+			if local_player.Character.PrimaryPart:FindFirstChild('nurysium_fx') then
+				local_player.Character.PrimaryPart['nurysium_fx']:Destroy()
+			end
+		end
+
+	end)
+end)
+
+--// night mode
+
+task.defer(function()
+	while task.wait(1) do
+		if getgenv().night_mode_Enabled then
+			TweenService:Create(game:GetService("Lighting"), TweenInfo.new(3), {ClockTime = 1.9}):Play()
+		else
+			TweenService:Create(game:GetService("Lighting"), TweenInfo.new(3), {ClockTime = 13.5}):Play()
+		end
+	end
+end)
+
+--// spectate ball
+
+task.defer(function()
+    RunService.RenderStepped:Connect(function()
+        if getgenv().spectate_Enabled then
+
+            local self = Nurysium_Util.getBall()
+
+            if not self then
+                return
+            end
+
+            workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(CFrame.new(workspace.CurrentCamera.CFrame.Position, self.Position), 1.5)
+        end
+    end)
+end)
+
+--// shaders
+
+task.defer(function()
+	while task.wait(1) do
+		if getgenv().shaders_effect_Enabled then
+			TweenService:Create(game:GetService("Lighting").Bloom, TweenInfo.new(4), {
+				Size = 100,
+				Intensity = 2.1
+			}):Play()
+		else
+			TweenService:Create(game:GetService("Lighting").Bloom, TweenInfo.new(3), {
+				Size = 3,
+				Intensity = 1
+			}):Play()
+		end
+	end
+end)
+
+--// Hit Sound
+ReplicatedStorage.Remotes.ParrySuccess.OnClientEvent:Connect(function()
+	if getgenv().hit_sound_Enabled then
+		hit_Sound:Play()
+	end
+
+	if getgenv().hit_effect_Enabled then
+		local hit_effect = game:GetObjects("rbxassetid://17407244385")[1]
+
+		hit_effect.Parent = Nurysium_Util.getBall()
+		hit_effect:Emit(3)
+
+		task.delay(5, function()
+			hit_effect:Destroy()
+		end)
+
+	end
+end)
+
+--// aura
+
+local aura = {
+	can_parry = true,
+	is_spamming = false,
+
+	parry_Range = 0,
+	spam_Range = 0,  
+	hit_Count = 0,
+
+	hit_Time = tick(),
+	ball_Warping = tick(),
+	is_ball_Warping = false,
+	last_target = nil
+}
+
+--// AI
+
+task.defer(function()
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if getgenv().ai_Enabled and workspace.Alive:FindFirstChild(local_player.Character.Name) then
+            local self = Nurysium_Util.getBall()
+
+            if not self or not closest_Entity then
+                return
+            end
+
+            if not closest_Entity:FindFirstChild('HumanoidRootPart') then
+                walk_to(local_player.Character.HumanoidRootPart.Position + Vector3.new(math.sin(tick()) * math.random(35, 50), 0, math.cos(tick()) * math.random(35, 50)))
+                return
+            end
+
+            local ball_Position = self.Position
+            local ball_Speed = self.AssemblyLinearVelocity.Magnitude
+            local ball_Distance = local_player:DistanceFromCharacter(ball_Position)
+
+            local player_Position = local_player.Character.PrimaryPart.Position
+
+            local target_Position = closest_Entity.HumanoidRootPart.Position
+            local target_Distance = local_player:DistanceFromCharacter(target_Position)
+            local target_LookVector = closest_Entity.HumanoidRootPart.CFrame.LookVector
+
+            local resolved_Position = Vector3.zero
+
+            local target_Humanoid = closest_Entity:FindFirstChildOfClass("Humanoid")
+            if target_Humanoid and target_Humanoid:GetState() == Enum.HumanoidStateType.Jumping and local_player.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
+                local_player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+
+            if (ball_Position - player_Position):Dot(local_player.Character.PrimaryPart.CFrame.LookVector) < -0.2 and tick() % 4 <= 2 then
+                return
+            end
+
+            if tick() % 4 <= 2 then
+                if target_Distance > 10 then
+                    resolved_Position = target_Position + (player_Position - target_Position).Unit * 8
+                else
+                    resolved_Position = target_Position + (player_Position - target_Position).Unit * 25
+                end
+            else
+                resolved_Position = target_Position - target_LookVector * (math.random(8.5, 13.5) + (ball_Distance / math.random(8, 20)))
+            end
+
+            if (player_Position - target_Position).Magnitude < 8 then
+                resolved_Position = target_Position + (player_Position - target_Position).Unit * 35
+            end
+
+            if ball_Distance < 8 then
+                resolved_Position = player_Position + (player_Position - ball_Position).Unit * 10
+            end
+
+            if aura.is_spamming then
+                resolved_Position = player_Position + (ball_Position - player_Position).Unit * 10
+            end
+
+            walk_to(resolved_Position + Vector3.new(math.sin(tick()) * 10, 0, math.cos(tick()) * 10))
+        end
+    end)
+end)
+
+
+ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent:Connect(function()
+	aura.hit_Count += 1
+
+	task.delay(0.185, function()
+		aura.hit_Count -= 1
+	end)
+end)
+
+
+task.spawn(function()
+	RunService.PreRender:Connect(function()
+		if not getgenv().aura_Enabled then
+			return
+		end
+
+		if closest_Entity then
+			if workspace.Alive:FindFirstChild(closest_Entity.Name) then
+				if aura.is_spamming then
+					if local_player:DistanceFromCharacter(closest_Entity.HumanoidRootPart.Position) <= aura.spam_Range then   
+						parry_remote:FireServer(
+							0.5,
+							CFrame.new(camera.CFrame.Position, Vector3.zero),
+							{[closest_Entity.Name] = closest_Entity.HumanoidRootPart.Position},
+							{closest_Entity.HumanoidRootPart.Position.X, closest_Entity.HumanoidRootPart.Position.Y},
+							false
+						)
+					end
+				end
+			end
+		end
+	end)
+
+	RunService.PreRender:Connect(function()
+		if not getgenv().aura_Enabled then
+			return
+		end
+
+		workspace:WaitForChild("Balls").ChildRemoved:Once(function(child)
+			aura.hit_Count = 0
+			aura.is_ball_Warping = false
+			aura.is_spamming = false
+			aura.can_parry = true
+			aura.last_target = nil
+		end)
+
+		local ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue() / 10
+		local self = Nurysium_Util.getBall()
+
+		if not self then
+			return
+		end
+
+		self:GetAttributeChangedSignal('target'):Once(function()
+			aura.can_parry = true
+		end)
+
+		self:GetAttributeChangedSignal('from'):Once(function()
+			aura.last_target = workspace.Alive:FindFirstChild(self:GetAttribute('from'))
+		end)
+
+		if self:GetAttribute('target') ~= local_player.Name or not aura.can_parry then
+			return
+		end
+
+		get_closest_entity(local_player.Character.PrimaryPart)
+
+		local player_Position = local_player.Character.PrimaryPart.Position
+		local player_Velocity = local_player.Character.HumanoidRootPart.AssemblyLinearVelocity
+		local player_isMoving = player_Velocity.Magnitude > 0
+
+		local ball_Position = self.Position
+		local ball_Velocity = self.AssemblyLinearVelocity
+
+		if self:FindFirstChild('zoomies') then
+			ball_Velocity = self.zoomies.VectorVelocity
+		end
+
+		local ball_Direction = (local_player.Character.PrimaryPart.Position - ball_Position).Unit
+		local ball_Distance = local_player:DistanceFromCharacter(ball_Position)
+		local ball_Dot = ball_Direction:Dot(ball_Velocity.Unit)
+		local ball_Speed = ball_Velocity.Magnitude
+		local ball_speed_Limited = math.min(ball_Speed / 1000, 0.1)
+
+		local target_Position = closest_Entity.HumanoidRootPart.Position
+		local target_Distance = local_player:DistanceFromCharacter(target_Position)
+		local target_distance_Limited = math.min(target_Distance / 10000, 0.1)
+		local target_Direction = (local_player.Character.PrimaryPart.Position - closest_Entity.HumanoidRootPart.Position).Unit
+		local target_Velocity = closest_Entity.HumanoidRootPart.AssemblyLinearVelocity
+		local target_isMoving = target_Velocity.Magnitude > 0
+		local target_Dot = target_isMoving and math.max(target_Direction:Dot(target_Velocity.Unit), 0)
+
+		aura.spam_Range = math.max(ping / 10, 10.5) + ball_Speed / 6.15
+		aura.parry_Range = math.max(math.max(ping, 3.5) + ball_Speed / 3.25, 9.5)
+
+		if target_isMoving then
+            aura.is_spamming = (aura.hit_Count > 1 or (target_Distance < 11 and ball_Distance < 10)) and ball_Dot > -0.25
+        else
+            aura.is_spamming = (aura.hit_Count > 1 or (target_Distance < 11.5 and ball_Distance < 10))
+        end
+
+		if ball_Dot < -0.2 then
+			aura.ball_Warping = tick()
+		end
+
+		task.spawn(function()
+			if (tick() - aura.ball_Warping) >= 0.15 + target_distance_Limited - ball_speed_Limited or ball_Distance < 10 then
+				aura.is_ball_Warping = false
+				return
+			end
+
+			if (ball_Position - aura.last_target.HumanoidRootPart.Position).Magnitude > 35.5 or target_Distance <= 12 then
+				aura.is_ball_Warping = false
+				return
+			end
+
+			aura.is_ball_Warping = true
+		end)
+
+		if ball_Distance <= aura.parry_Range and not aura.is_ball_Warping and ball_Dot > -0.1 then
+			parry_remote:FireServer(
+				0.5,
+				CFrame.new(camera.CFrame.Position, Vector3.new(math.random(-1000, 1000), math.random(0, 1000), math.random(100, 1000))),
+				{[closest_Entity.Name] = target_Position},
+				{target_Position.X, target_Position.Y},
+				false
+			)
+
+			aura.can_parry = false
+			aura.hit_Time = tick()
+			aura.hit_Count += 1
+
+			task.delay(0.2, function()
+				aura.hit_Count -= 1
+			end)
+		end
+
+		task.spawn(function()
+			repeat
+				RunService.PreRender:Wait()
+			until (tick() - aura.hit_Time) >= 1
+			    aura.can_parry = true
+		end)
+	end)
+end)
+
+local plrs = cloneref(game:GetService("Players"))
+local lp = plrs.LocalPlayer
+local rs = cloneref(game:GetService("RunService"))
+
+local playrewardscontroller
+local rewardinfo
+local gotcontrollers = pcall(function()
+    playrewardscontroller = require(game:GetService("ReplicatedStorage").Controllers.UI.PlaytimeRewardsController)
+    rewardinfo = require(game:GetService("ReplicatedStorage").Common.PlaytimeRewardsInfo).Rewards
+end)
+
+
+local hitremote 
+for i,v in next, game:GetDescendants() do
+    if v and v.Name:find("\n") and v:IsA("RemoteEvent") then
+        hitremote = v
+        break
+    end
+end
+
+if not hitremote then
+    lp:Kick("Failed to find remote (Executor Problem) ")
+    return
+end
+
+getnearestball = function()
+    local ball
+    local dist = math.huge
+    local istrain = true
+    local ballpath = game:GetService("Workspace"):FindFirstChild("TrainingBalls")
+    if lp.Character:IsDescendantOf(game:GetService("Workspace"):FindFirstChild("Alive")) then
+        istrain = false
+        ballpath = game:GetService("Workspace"):FindFirstChild("Balls")
+    end
+    for i,v in next, ballpath:GetChildren() do
+        if v and v:IsA("Part") and v:GetAttribute("realBall") and v:GetAttribute("realBall") == true then
+            local mag = lp:DistanceFromCharacter(v.Position)
+            if dist > mag then
+                ball = v
+                dist = mag
+            end
+        end
+    end
+    if ball and ball.Position then
+        return ball, dist, ball.Position, istrain
+    end
+    return ball, dist, nil, istrain
+end
+
+getballtarget = function()
+    local ball, mag, pos = getnearestball()
+    if ball and ball:GetAttribute("target") then
+        return ball:GetAttribute("target")
+    end
+end
+
+isballtargetingplr = function()
+    local ball, mag, pos = getnearestball()
+    if getballtarget() == lp.Name then
+        return true
+    end
+    return false
+end
+
+getplrs = function()
+    local plrss = {}
+    for i,v in next, plrs:GetPlayers() do
+        if v and v.Character and v.Character:IsDescendantOf(game:GetService("Workspace"):FindFirstChild("Alive")) then
+            plrss[v.Name] = v.Character.PrimaryPart.Position + Vector3.new(10, 10, 10)
+        end
+    end
+    return plrss
+end
+
+getcloseplr = function()
+    local plr
+    local dista = math.huge
+    for i,v in next, plrs:GetPlayers() do
+        if v and v ~= lp and v.Character and v.Character:IsDescendantOf(game:GetService("Workspace"):FindFirstChild("Alive")) and v.Character:FindFirstChildOfClass("Humanoid") and v.Character:FindFirstChildOfClass("Humanoid").Health > 0 and v.Character.PrimaryPart then
+            local dist = lp:DistanceFromCharacter(v.Character.PrimaryPart.Position)
+            if dist < dista then
+                dista = dist
+                plr = v
+            end
+        end
+    end
+    return plr
+end
+
+getplrfromname = function(plr)
+    return plrs:FindFirstChild(plr)
+end
+
+
+getmap = function()
+    for i,v in next, game:GetService("Workspace"):FindFirstChild("Map"):GetChildren() do
+        return v
+    end
+end
+
+getfrom = function()
+    for i,v in next, game:GetService("Workspace"):FindFirstChild("Balls"):GetChildren() do
+        if v and v:GetAttribute("realBall") and v:GetAttribute("realBall") == true and v:GetAttribute("from") and v:GetAttribute("from") ~= lp.Name then
+            return v:GetAttribute("from")
+        end
+    end
+    return false
+end
+
+getfrom = function()
+    local ball, mag, pos = getnearestball()
+    if ball and ball:GetAttribute("realBall") and ball:GetAttribute("realBall") == true and ball:GetAttribute("from") and ball:GetAttribute("from") ~= lp.Name then
+        return ball:GetAttribute("from")
+    end
+    return false
+end
+
+getplr = function(plrname)
+    return game:GetService("Workspace"):FindFirstChild("Alive"):FindFirstChild(plrname)
+end
+
+getplrmag = function(plr)
+    return (lp.Character.PrimaryPart.Position - plr.Position).Magnitude
+end
+
+checkplr = function(plr)
+    if plr and plr.Character and plr.Character:FindFirstChildWhichIsA("Humanoid") and plr.Character:FindFirstChildWhichIsA("Humanoid").Health > 0 and plr.Character.PrimaryPart then
+        if plr.Character:IsDescendantOf(game:GetService("Workspace"):FindFirstChild("Alive")) then
+            return true
+        end
+    end
+end
+
+local cframes = {
+    CFrame.new(-Random.new():NextNumber(200, 500), Random.new():NextNumber(0, 40), -Random.new():NextNumber(70, 120), -Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), math.random(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4),Random.new():NextNumber(0, 4)),
+    CFrame.new(-Random.new():NextNumber(200, 500), Random.new():NextNumber(0, 40), -Random.new():NextNumber(70, 120), -Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), math.random(0, 4), Random.new():NextNumber(0, 4), -Random.new():NextNumber(0, 4), -Random.new():NextNumber(0, 4), -Random.new():NextNumber(0, 4),-Random.new():NextNumber(0, 4)),
+    CFrame.new(-Random.new():NextNumber(200, 500), Random.new():NextNumber(0, 80), -Random.new():NextNumber(70, 120), -Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), math.random(0, 4), Random.new():NextNumber(0, 4), -Random.new():NextNumber(0, 4), -Random.new():NextNumber(0, 4), -Random.new():NextNumber(0, 4),-Random.new():NextNumber(0, 4)),
+    CFrame.new(-Random.new():NextNumber(200, 600), Random.new():NextNumber(0, 80), -Random.new():NextNumber(70, 120), -Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), math.random(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4), Random.new():NextNumber(0, 4),Random.new():NextNumber(0, 4))
+}
+
+local canautoparry = false
+local canautorapture = false
+local canautospam = false
+local canautocurve = false
+local parrydist = 1.65
+local oldparrydist = 1.65
+local autospamspeed = 12
+local parrycon = {}
+
+startautoparry = function()
+    spawn(function()
+        local raptureremote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("PlrRaptured")
+        local lasthit = tick()
+        local reset = nil
+        local spamnoti = true
+        local canhit = true
+        table.insert(parrycon, game:GetService("RunService").PreRender:Connect(function()
+            if not canautoparry then
+                for i,v in next, parrycon do
+                    v:Disconnect()
+                end
+                table.clear(parrycon)
+            end
+            local ball, mag, ballpos, istraining = getnearestball()
+            if ball and mag and ballpos and isballtargetingplr() then
+                
+                reset = true 
+                local speed = ball.AssemblyLinearVelocity.Magnitude
+                local speedy = ball.AssemblyLinearVelocity.Y
+                local args = {
+                    [1] = 0.5,
+                    [2] = canautocurve and cframes[math.random(1, #cframes)] or CFrame.new(0,0,0),
+                    [3] = getcloseplr() and {[tostring(getcloseplr().Name)] = getcloseplr().Character.PrimaryPart.Position} or getplrs(),
+                    [4] = {
+                        [1] = math.random(200, 500),
+                        [2] = math.random(100, 200)
+                    },
+                    [5] = false
+                }
+                local magplr = 40
+                if canautospam and canautoparry and not istraining then
+                    local plrname = getfrom()
+                    if plrname and getplr(plrname) and getplrmag(getplr(plrname).PrimaryPart) then 
+                        magplr = getplrmag(getplr(plrname).PrimaryPart)
+                    end
+                    if tick() - lasthit < 0.35 or 24 >= magplr and canhit and speed >= 300 then
+                        for i = 1, autospamspeed do
+                            if 23.5 < mag and speed <= 210 then
+                                task.wait(mag/170)
+                            end
+                            if spamnoti then
+                                spamnoti = false
+                                guilib:notify({
+                                    title = "Auto Spam Trigger", 
+                                    info = "Auto spam has been triggered!", 
+                                    dur = 4
+                                })
+                                task.delay(8, function()
+                                    spamnoti = true 
+                                end)
+                            end
+                            for i = 1,autospamspeed do
+                                hitremote:FireServer(unpack(args))
+                                if not magplr or getplr(plrname):FindFirstChildWhichIsA("Humanoid").Health < 0.1 or  magplr >= 26 or 270 >= speed or tick() - lasthit > 0.85 or not lp.Character:IsDescendantOf(game:GetService("Workspace"):FindFirstChild("Alive")) or not canautoparry then
+                                    break
+                                end
+                            end        
+                        end
+                    end
+                end
+                if canautorapture then
+                    if (speed / mag) >= (parrydist - 0.05) then
+                        raptureremote:FireServer(unpack(args))
+                    end
+                end
+                speed -= 15
+                if lp.Character:FindFirstChildWhichIsA("Humanoid") and lp.Character:FindFirstChildWhichIsA("Humanoid").MoveDirection ~= Vector3.zero then
+                    speed -= 2.75
+                end
+                if (speed / mag) >= (parrydist) and speed > 50 or 25 > mag then
+                    if canautoparry and canhit and speed > 0 then
+                        if speedy > 30 and speed >= 280 then
+                            task.wait(speedy/(speed/0.5))
+                        end
+                        canhit = false
+                        hitremote:FireServer(unpack(args))
+                        task.delay(2, function()
+                            canhit = true
+                        end)
+                    end
+                end
+            else
+                if reset then
+                    canhit = true
+                    if not isballtargetingplr() or not ball then
+                        lasthit = tick()
+                    end
+                    reset = nil
+                end
+            end
+        end))
+    end)
+end
+
+function GetMouse()
+    local UserInputService = game:GetService("UserInputService")
+    return UserInputService:GetMouseLocation()  -- Ensure this is the correct method for your setup
+end
+
+function GetClosestPlayer()
+    local closestDistance = math.huge
+    local closestTarget = nil
+    for _, v in pairs(game:GetService("Workspace").Alive:GetChildren()) do
+        if v and v:FindFirstChild("HumanoidRootPart") and v ~= game.Players.LocalPlayer.Character then
+            local humanoidRootPart = v.HumanoidRootPart
+                local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude --(Vector2.new(viewportPoint.X, viewportPoint.Y) - mousePos).magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestTarget = v
+                end
+        end
+    end
+    return closestTarget
+end
+
+spawn(function()
+    while task.wait() do
+        if PlayerSaftey then
+            if game.Players.LocalPlayer.Character.Parent.Name == "Dead" then return end
+            pcall(function()
+                if (GetClosestPlayer().HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= PlayerSaftey_Distance then
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = GetClosestPlayer().HumanoidRootPart.CFrame * CFrame.new(-25, 0, -PlayerSaftey_Distance)
+                end
+            end)
+        end
+    end
+end)
+
+function GetBall()
+    for i,v in pairs(game:GetService("Workspace").Balls:GetChildren()) do
+        if v:IsA("Part") then
+            return v
+        end
+    end
+    return nil
+end
+
+function GetBallfromplayerPos(Ball)
+    return (Ball.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+end
+
+local function getSpeed(part)
+    if part:IsA("BasePart") then
+        local speed = part.Velocity.Magnitude
+        if speed > 1 then
+            return part, speed
+        end
+        return nil, nil
+    else
+        print("The provided instance is not a BasePart.")
+        return nil, nil
+    end
+end
+
+local function measureVerticalDistance(humanoidRootPart, targetPart)
+    local humanoidRootPartY = humanoidRootPart.Position.Y
+    local targetPartY = targetPart.Position.Y
+    local verticalDistance = math.abs(humanoidRootPartY - targetPartY)
+    return verticalDistance
+end
+
+function GetHotKey()
+	for i,v in pairs(game.Players.LocalPlayer.PlayerGui.Hotbar.Block.HotkeyFrame:GetChildren()) do
+		if v:IsA("TextLabel") then
+			return v.Text
+		end
+	end
+	return ""
+end
+
+local text = game.Players.LocalPlayer.PlayerGui.Hotbar.Block.HotkeyFrame.F
+local KeyCodeBlock = text.Text
+text:GetPropertyChangedSignal("Text"):Connect(function()
+    KeyCodeBlock = text.Text
+end)
+
+local CanSlash = false
+local BallSpeed = 0
+
+spawn(function()
+    while task.wait() do
+        if RandAutoaParry[tostring(RandRNG)] then
+            pcall(function()
+				for i, v in pairs(game:GetService("Workspace").Balls:GetChildren()) do
+                    if v:IsA("Part") then
+                        if not game.Players.LocalPlayer.Character:FindFirstChild("Highlight") then return end
+						local part, speed = getSpeed(v)
+                        if part and speed then
+                            local minDistance = 2.5 * (speed * 0.1) + 2
+                            if minDistance == 0 or minDistance <= 20 then
+                                BallSpeed = 23
+                            elseif minDistance == 20 or minDistance <= 88 then
+                                BallSpeed = 2.5 * (speed * 0.1) + 5
+                            elseif minDistance == 88 or minDistance <= 110 then
+                                BallSpeed = 90
+                            -- elseif minDistance >= 110 then
+                            --     BallSpeed = 2 * (speed * 0.1)
+                            end
+							if (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - part.Position).Magnitude <= (BallSpeed) then -- (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - part.Position).Magnitude <= minDistance and 
+                                CanSlash = true
+                            else
+                                CanSlash = false
+                            end
+						end
+                    end
+                end
+                
+                if CanSlash then
+                    if math.random(1, 5) == 5 then
+                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0, 0, 0, true, game, 1)
+                    else
+                        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode[KeyCodeBlock], false, game)
+                    end
+                    CanSlash = false
+                end
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while task.wait() do
+        if AutoWalk then
+            pcall(function()
+                if game.Players.LocalPlayer.Character.Parent.Name == "Dead" then return end
+				for i, v in pairs(game:GetService("Workspace").Balls:GetChildren()) do
+                    if v:IsA("Part") then
+						local part, speed = getSpeed(v)
+                        if part and speed then
+							if speed > 5 then
+                                if not game.Players.LocalPlayer.Character:FindFirstChild("Highlight") then
+                                    game.Players.LocalPlayer.Character.Humanoid:MoveTo(part.Position + Vector3.new(AutoWalkDistanceX, 0, AutoWalkDistanceZ))
+                                else
+                                    for i,v in pairs(game:GetService("Workspace").Alive:GetChildren()) do
+                                        if game.Players.LocalPlayer.Character.Parent.Name == "Alive" then
+                                            if  v ~= game.Players.LocalPlayer.Character then
+                                                game.Players.LocalPlayer.Character.Humanoid:MoveTo(v.HumanoidRootPart.Position + Vector3.new(AutoWalkDistanceX, 0, AutoWalkDistanceZ))
+                                            end
+                                        end
+                                    end
+                                end
+							end
+						end
+                    end
+                end
+            end)
+        end
+        if AutoDoubleJump then
+            pcall(function()
+                game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while task.wait() do
+        if ClosestPlayer_var then
+            pcall(function()
+                if game.Players.LocalPlayer.Character.Parent.Name == "Dead" then return end
+                local OldCameraFrame = workspace.CurrentCamera.CFrame
+                local ClosestPlayer = GetClosestPlayer()
+                if ClosestPlayer then
+                    workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, ClosestPlayer.Head.Position)
+                end
+            end)
+        end
+    end
+end)
+
+spawn(function()
+    while task.wait(math.random(1,2)) do
+        if RandomTeleports then
+            pcall(function()
+                if game.Players.LocalPlayer.Character.Parent.Name == "Dead" then return end
+                for i, v in pairs(game:GetService("Workspace").Balls:GetChildren()) do
+                    if v:IsA("Part") then
+						local part, speed = getSpeed(v)
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = part.CFrame * CFrame.new(TeleportDistanceX, 0, TeleportDistancez)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+initializate('nurysium_temp')
+
+-- Start
+
+local Window = Library.CreateLib("TwWare v2.0.0 | #TwiWareOnTop")
+
+local Tab = Window:NewTab("Info 🧾")
+local Tab = Window:NewTab("Combat ✨")
+local Section = Tab:NewSection("customiser + autos")
+
+Section:NewSlider("Parry Distance", "Parry Distance", 5, 0, function(call)
+         parrydist = tonumber(call)
+        oldparrydist = tonumber(call)   
+end)
+Section:NewSlider("Auto Spam Speed", "Clash Spam Speed", 15, 1, function(call)
+            autospamspeed = tonumber(call)
+end)
+
+Section:NewToggle("Auto Parry", "Auto hit the ball", function(call)
+        canautoparry = call
+        if canautoparry then
+            startautoparry()
+        else
+            for i,v in next, parrycon do
+                v:Disconnect()
+            end
+            table.clear(parrycon)
+        end
+end)
+
+Section:NewToggle("Auto Spam", "autospam for clash", function(call)
+        canautospam = call
+end)
+
+Section:NewToggle("AutoRapture", "Auto Uses Rapture Ability When You Parry The Ball If You have.", function(call)
+        canautorapture = call
+end)
+
+Section:NewToggle("AutoCurve", "curves the ball", function(call)
+        canautocurve = call
+end)
+
+Section:NewToggle("AI", "Ai Best", function(toggled)
+getgenv().ai_Enabled = toggled
+end)
+
+Section:NewToggle("Aim At Closest Player", "aim player to the ball", function(t)
+      ClosestPlayer_var = t
+end)
+local Section = Tab:NewSection("Balls")
+
+Section:NewToggle("AutoFram Ball Or AutoTpBall", "Auto Fram A Ball", function(toggled)
+            if toggled then
+                getgenv().TpToBall = true
+                local Balls = workspace.Balls
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+ 
+        local function Cycle(Character)
+            repeat
+                for _, ball in pairs(Balls:GetChildren()) do
+                    if ball.BrickColor ~= "Dark blue" and TpToBall and Character:FindFirstChild("HumanoidRootPart") then
+                        Character:FindFirstChild("HumanoidRootPart").CFrame = ball.CFrame + Vector3.new(25, 5, 0)
+                        task.wait()
+                    end
+                end
+            task.wait()
+            until not Character or not Character:FindFirstChild("Humanoid") or Character:FindFirstChild("Humanoid").Health ==  0
+        end
+ 
+        LocalPlayer.CharacterAdded:Connect(Cycle);
+        Cycle(LocalPlayer.Character);
+             else
+                getgenv().TpToBall = false
+                local Balls = workspace.Balls
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+ 
+        local function Cycle(Character)
+            repeat
+                for _, ball in pairs(Balls:GetChildren()) do
+                    if ball.BrickColor ~= "Dark blue" and TpToBall and Character:FindFirstChild("HumanoidRootPart") then
+                        Character:FindFirstChild("HumanoidRootPart").CFrame = ball.CFrame + Vector3.new(0, 0, -100)
+                        task.wait()
+                    end
+                end
+            task.wait()
+            until not Character or not Character:FindFirstChild("Humanoid") or Character:FindFirstChild("Humanoid").Health ==  0
+        end
+ 
+        LocalPlayer.CharacterAdded:Connect(Cycle);
+        Cycle(LocalPlayer.Character);
+             end
+ 
+end)
+
+Section:NewToggle("Follow Ball", "It Follow Ball", function(t)
+          getgenv().FB = state
+end)
+spawn(function()
+    local TweenService = game:GetService("TweenService")
+    local plr = game.Players.LocalPlayer
+    local Ball = workspace:WaitForChild("Balls")
+    local currentTween = nil
+
+    while true do
+        wait(0.001)
+        if getgenv().FB then
+            local ball = Ball:FindFirstChildOfClass("Part")
+            local char = plr.Character
+            if ball and char then
+                local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, false, 0)
+                local distance = (char.PrimaryPart.Position - ball.Position).magnitude
+                if distance <= 1000 then 
+                    if currentTween then
+                        currentTween:Pause()
+                    end
+                    currentTween = TweenService:Create(char.PrimaryPart, tweenInfo, {CFrame = ball.CFrame})
+                    currentTween:Play()
+                end
+            end
+        else
+            if currentTween then
+                currentTween:Pause()
+                currentTween = nil
+            end
+        end
+    end
+end)
+
+Section:NewToggle("spectate ball", "info", function(toggled)
+getgenv().spectate_Enabled = toggled
+end)
+
+local Tab = Window:NewTab("Crates")
+local Shop = Tab:NewSection("Crates")
+
+Shop:NewButton("Buy Sword Crate", "Buys the sword crate for everytime you click this button.", function() 
+    game:GetService("ReplicatedStorage").Remote.RemoteFunction:InvokeServer("PromptPurchaseCrate", workspace.Spawn.Crates.NormalSwordCrate)
+end)
+
+Shop:NewButton("Buy Explosion Crate", "Buys the explosion crate for everytime you click this button.", function() 
+    game:GetService("ReplicatedStorage").Remote.RemoteFunction:InvokeServer("PromptPurchaseCrate", workspace.Spawn.Crates.NormalExplosionCrate)
+end)
+
+Shop:NewToggle("Auto Buy Sword Crate", "If on it'll automatically buy the sword crate as long as you have money.", function(state) 
+    getgenv().ASC = state
+end)
+
+Shop:NewToggle("Auto Buy Explosion Crate", "If on it'll automatically buy explosion crate for as long as you have money", function(state) 
+    getgenv().AEC = state
+end)
+setfpscap(120)
+local Tab = Window:NewTab("Player")
+local Section = Tab:NewSection("Options")
+
+Section:NewSlider("FOV Slider", "Sweat 💦", 120, 70, function(s)
+game.workspace.CurrentCamera.FieldOfView = s
+end)
+
+Section:NewSlider("Speed Slider", "n", 400, 0, function(s)
+game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = s
+end)
+
+Section:NewSlider("Jump Slider", "n", 250, 0, function(s)
+game.Players.LocalPlayer.Character.Humanoid.JumpPower = s
+end)
+
+Section:NewSlider("HipHeight", "n", 250, 0, function(s)
+game.Players.LocalPlayer.Character.Humanoid.HipHeight = s
+end)
+
+Section:NewSlider("Gravity Slider", "n", 250, 0, function(s)
+game.workspace.Gravity = s
+end)
+
+Section:NewToggle("AutoJump (PC)", "Autojump it can help auto double jump you", function(t)
+      AutoDoubleJump = t
+end)
+
+Section:NewButton("Reset", "ButtonInfo", function()
+    game.Players.LocalPlayer.Character.Humanoid.Health = 0
+end)
+
+Section:NewButton("Rejoin", "ButtonInfo", function()
+    local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Rejoin = coroutine.create(function()
+    local Success, ErrorMessage = pcall(function()
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end)
+
+    if ErrorMessage and not Success then
+        warn(ErrorMessage)
+    end
+end)
+
+coroutine.resume(Rejoin)
+end)
+
+local Tab = Window:NewTab("Visuals/World")
+local Section = Tab:NewSection("Visuals")
+
+Section:NewToggle("hit sound", "info", function(toggled)
+getgenv().hit_sound_Enabled = toggled
+end)
+Section:NewToggle("Self Effect", "info", function(toggled)
+getgenv().self_effect_Enabled = toggled
+end)
+Section:NewToggle("Self Effect With Music", "info", function(toggled)
+getgenv().shaders_Enabled = toggled
+end)
+Section:NewToggle("Kill Effect", "info", function(toggled)
+getgenv().kill_effect_Enabled = toggled
+end)
+Section:NewToggle("Hit Effect", "info", function(toggled)
+getgenv().hit_effect_Enabled = toggled
+end)
+Section:NewToggle("Trail", "info", function(toggled)
+getgenv().trail_Enabled = toggled
+end)
+Section:NewToggle("Shaders", "info", function(toggled)
+getgenv().shaders_Enabled = toggled
+end)
+Section:NewToggle("Night/Day Toggle", "Turns the atmosphere into night", function(state)
+    getgenv().NM = state
+end)
+task.defer(function()
+    while task.wait(1) do
+        local tweenService = game:GetService("TweenService")
+        local lighting = game:GetService("Lighting")
+        if getgenv().NM then
+            tweenService:Create(lighting, TweenInfo.new(3), {ClockTime = 3.9}):Play()
+        else
+            tweenService:Create(lighting, TweenInfo.new(3), {ClockTime = 13.5}):Play()
+        end
+    end
+end)
+Section:NewToggle("Visualiser (New Color)", "Makes A Circle", function(value)
+   getgenv().disable = true
+wait(.1)
+getgenv().disable = false
+function getball()
+    local ball
+    for i, v in pairs(workspace.Balls:GetChildren()) do if v.Anchored == false then ball = v end end
+return ball
+end
+
+function istargeted()
+    return game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Highlight") and true or false
+end
+
+function distancefromball()
+    local dist
+    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character.HumanoidRootPart and getball() then
+        return (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - getball().Position).Magnitude
+    end
+end
+
+function getping()
+    return game.Players.LocalPlayer:GetNetworkPing()*20
+end
+
+function getparrydist()
+    return math.clamp(getball().Velocity.Magnitude/2.4+getping(),15, 200)
+end
+
+function waituntilnottargeted()
+local timeout = false
+    spawn(function()
+wait(.8)
+timeout = true
+    end)
+    repeat wait() until not istargeted() or timeout
+end
+
+local circle = Instance.new("Part")
+circle.Shape = Enum.PartType.Ball
+circle.Material = Enum.Material.SmoothPlastic
+circle.Parent = workspace
+circle.CanCollide = false
+circle.Material = Enum.Material.ForceField
+circle.Anchored = true
+circle.CastShadow = false
+
+local last = 99999
+local spam = false
+local alrchecked = false
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    spam = false
+end)
+
+game.Players.LocalPlayer.Character.Humanoid.Died:Connect(function()
+    spam = false
+end)
+
+spawn(function()
+while wait() and not getgenv().disable do
+    xpcall(function()
+        -- if getball() then print(getparrydist()) end
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then circle.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame circle.Size = Vector3.new(getparrydist(),getparrydist(),getparrydist()) end
+if istargeted() and not alrchecked then
+    if tick() - last < .7 and distancefromball() < 70 or distancefromball() < 20  then
+        print(distancefromball())
+        print(tick() - last)
+    spam = true
+    print("spam")
+    circle.Color = Color3.new(1,9,1)
+    alrchecked = true
+    else
+        alrchecked = true
+        print("no spam")
+        spam = false
+    circle.Color = Color3.new(1,1,1)
+    end
+    last = tick()
+elseif not istargeted() then
+    alrchecked = false
+end
+        if istargeted() == true and getball() ~= nil and distancefromball() < getparrydist() or spam and istargeted() then
+            local args = {
+        [1] = 0.5,
+        [2] = CFrame.lookAt(workspace.CurrentCamera.CFrame.p, Vector3.new(workspace.CurrentCamera.CFrame.p.X,999999999999999999999999999,workspace.CurrentCamera.CFrame.p.Z)),
+        [3] = {
+            ["HunnayyyxD"] = Vector3.new(1171.807861328125, 226.43194580078125, 85.06675720214844),
+            ["Softicey"] = Vector3.new(10073.6025390625, 640.4264526367188, 10.497177124023438),
+            ["DonPlayyz_YT"] = Vector3.new(-2097.249755859375, -391.8228759765625, -8.48858642578125),
+            ["Caryhco"] = Vector3.new(1336.871337890625, 224.7318115234375, 105.85006713867188),
+            ["ii_VaIord"] = Vector3.new(4280.7001953125, 324.5129699707031, 33.27197265625),
+            ["wayareyousoga"] = Vector3.new(-650.9739990234375, 24.628662109375, -31.402557373046875),
+            ["East_Wave"] = Vector3.new(2366.4990234375, 272.4285888671875, 51.80149841308594),
+            ["Idea_Saman100"] = Vector3.new(1856.654052734375, 224.4664306640625, 106.3294677734375),
+            ["SteveTheMan042"] = Vector3.new(-4457.2109375, -216.7236328125, -12.2535400390625),
+            ["piggy12841"] = Vector3.new(1569.9359130859375, 223.1246337890625, 109.55888366699219),
+            ["geeseofthesilly"] = Vector3.new(940.6378173828125, 556.8900146484375, 12.81744384765625),
+            ["Mariagurl_16"] = Vector3.new(797.1363525390625, 272.2474060058594, 47.91747283935547)
+        },
+        [4] = {
+            [1] = 893,
+            [2] = 618
+        }
+    }
+    
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("ParryAttempt"):FireServer(unpack(args))
+    if not spam then waituntilnottargeted() else wait(distancefromball()/250) end
+end
+end, warn)
+end
+end)
+repeat wait() until getgenv().disable
+circle:Destroy()
+
+
+local function get_plr()
+  return game.Players.LocalPlayer
+end
+
+local function get_plrChar()
+  local plrChar = get_plr().Character
+  if plrChar then
+    return plrChar
+  end
+end
+
+local function get_plrRP()
+  local plrRP = get_plrChar():FindFirstChild("HumanoidRootPart")
+  if plrRP then
+    return plrRP
+  end
+end
+
+local function playerJump()
+  pcall(function()
+    game.Players.LocalPlayer.Character.Humanoid.Jump = true
+  end)
+end
+
+local function get_PlayersNumber()
+  local Alive = workspace:WaitForChild("Alive", 20):GetChildren()
+  local PlayersNumber = 0
+  for _,v in pairs(Alive) do
+    if v and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 50 then
+      PlayersNumber = PlayersNumber + 1
+    end
+  end
+  return PlayersNumber
+end
+
+local function get_ProxyPlayer()
+  local Players = workspace:WaitForChild("Alive"):GetChildren()
+  local Distance = math.huge
+  local plr = game.Players.LocalPlayer
+  local plrRP = plr.Character:FindFirstChild("HumanoidRootPart")
+  local Player = nil
+  
+  for _,plr1 in pairs(Players) do
+    if plr1.Name ~= plr.Name and plrRP and plr1:FindFirstChild("HumanoidRootPart") and plr1:FindFirstChild("Humanoid") and plr1.Humanoid.Health > 50 then
+      local magnitude = (plr1.HumanoidRootPart.Position - plrRP.Position).Magnitude
+      if magnitude <= Distance then
+        Distance = magnitude
+        Player = plr1
+      end
+    end
+  end
+  return Player
+end
+
+local function Click_Button()
+  task.spawn(function()
+    local plr = game.Players.LocalPlayer
+    local plrFind = workspace.Alive:FindFirstChild(plr.Name)
+    if plrFind then
+      local plrs = 0
+      for _,v in pairs(workspace:WaitForChild("Alive", 10):GetChildren()) do
+        plrs = plrs + 1
+      end
+      if plrs > 1 then
+        local args = {[1] = 1.5,[2] = CFrame.new(-254, 112, -119) * CFrame.Angles(-2, 0, 2),[3] = {
+        ["2617721424"] = Vector3.new(-273, -724, -20),
+        },[4] = {[1] = 910,[2] = 154}}
+        game:GetService("ReplicatedStorage").Remotes.ParryAttempt:FireServer(unpack(args))task.wait()
+      end
+    end
+  end)
+end
+
+task.spawn(function()
+  while task.wait() do
+    if getgenv().SpamClickA then
+      Click_Button()
+    end
+  end
+end)
+
+local function DetectSpam()
+  local Balls = workspace:WaitForChild("Balls", 20)
+  
+  local OldPos = Vector3.new()
+  local OldTick1 = tick()
+  
+  local OldBall = Balls
+  local TargetPlayer = ""
+  local SpamNum = 0
+  local BallSpeed = 0
+  local BallDistance = 0
+  
+  task.spawn(function()
+    local OldTick = tick()
+    local OldPos = Vector3.new()
+    while getgenv().DetectSpam do task.wait()
+      local plrRP = get_plrRP()
+      local Ball = Balls:FindFirstChildOfClass("Part")
+      if plrRP and Ball then
+        BallDistance = (plrRP.Position - Ball.Position).Magnitude
+        BallSpeed = (OldPos - Ball.Position).Magnitude
+        if tick() - OldTick >= 1/60 then
+          OldTick = tick()
+          OldPos = Ball.Position
+        end
+      end
+    end
+  end)
+  
+  while getgenv().DetectSpam do task.wait()
+    local Ball = Balls:FindFirstChildOfClass("Part")
+    local plrRP = get_plrRP()
+    local ProxyPlayer = get_ProxyPlayer()
+    
+    if not Ball then
+      getgenv().SpamClickA = false
+    end
+  
+    if Ball and Ball:GetAttribute("realBall") and OldBall ~= Ball then
+    
+      Ball.Changed:Connect(function()task.wait()
+        local Ball = Balls:FindFirstChildOfClass("Part")
+        
+        if Ball then
+          TargetPlayer = Ball:GetAttribute("target")
+          
+          if ProxyPlayer and TargetPlayer == ProxyPlayer.Name or get_plr() and TargetPlayer == get_plr().Name then
+            SpamNum = SpamNum + 1
+          else
+            SpamNum = 0
+          end
+          
+          local args = ProxyPlayer and ProxyPlayer:FindFirstChild("HumanoidRootPart")
+          local HL1 = ProxyPlayer and ProxyPlayer:FindFirstChild("Highlight")
+          local HL2 = get_plrChar() and get_plrChar():FindFirstChild("Highlight")
+          
+          if plrRP and HL1 and args or plrRP and HL2 and args then
+            local DistancePlayer = (ProxyPlayer.HumanoidRootPart.Position - plrRP.Position).Magnitude
+            local DistanceBall = (Ball.Position - plrRP.Position).Magnitude
+            
+            if get_PlayersNumber() < 3 then
+              if DistancePlayer <= 30 and DistanceBall <= 35 and SpamNum >= 2 then
+                getgenv().SpamClickA = true
+              else
+                getgenv().SpamClickA = false
+              end
+            else
+              if DistancePlayer <= 30 and DistanceBall <= 35 and SpamNum >= 3 then
+                getgenv().SpamClickA = true
+              else
+                getgenv().SpamClickA = false
+              end
+            end
+          else
+            getgenv().SpamClickA = false
+          end
+        end
+      end)
+      OldBall = Ball
+    end
+  end
+end
+
+getgenv().DetectSpam = true
+DetectSpam()
+
+local Cloneref = cloneref or function(Object)return Object end;
+
+local StatsService = Cloneref(game:GetService("Stats"));
+local UserInputService = Cloneref(game:GetService("UserInputService"));
+local ReplicatedStorage = Cloneref(game:GetService("ReplicatedStorage"));
+local Players = Cloneref(game:GetService("Players"));
+local Player = Players.LocalPlayer;
+
+local Saved = {
+	LastTick = os.clock(),
+	LastBallPosition = nil,
+	AttemptedParry = false,
+};
+
+local function GetBall()
+	local RealBall, OtherBall = nil, nil;
+	for Int, Object in pairs(workspace.Balls:GetChildren()) do
+		if Object:GetAttribute("realBall") == true then
+			RealBall = Object;
+		else
+			OtherBall = Object;
+		end;
+	end;
+	return RealBall, OtherBall;
+end;
+
+local function AttemptParry(OtherBall)
+	ReplicatedStorage.Remotes.ParryAttempt:FireServer(1.5, OtherBall.CFrame, (function()
+		local Results = {};
+		for Int, Character in pairs(workspace.Alive:GetChildren()) do
+			Results[Character.Name] = Character.HumanoidRootPart.Position;
+		end;
+		return Results;
+	end)(), {math.random(100, 999), math.random(100, 999)});
+end;
+
+while task.wait() do
+	local RealBall, OtherBall = GetBall();
+	if RealBall ~= nil and OtherBall ~= nil then
+		if Saved.LastBallPosition ~= nil then
+			if RealBall:GetAttribute("target") == Player.Name then
+				local DeltaT = os.clock() - Saved.LastTick;
+				local VelocityX = (OtherBall.Position.X - Saved.LastBallPosition.X) / DeltaT;
+				local VelocityY = (OtherBall.Position.Y - Saved.LastBallPosition.Y) / DeltaT;
+				local VelocityZ = (OtherBall.Position.Z - Saved.LastBallPosition.Z) / DeltaT;
+				local VelocityMagnitude = math.sqrt(VelocityX^2 + VelocityY^2 + VelocityZ^2);
+
+				local ServerPing = StatsService.Network.ServerStatsItem["Data Ping"]:GetValue();
+				local DistanceToPlayer = (Player.Character.HumanoidRootPart.Position - OtherBall.Position).Magnitude;
+				local EstimatedTimeToReachPlayer = (ServerPing / VelocityMagnitude) / (ServerPing / DistanceToPlayer);
+				local TimeToParry = 0.2 * (VelocityMagnitude / DistanceToPlayer);
+
+				print(EstimatedTimeToReachPlayer, "<=", TimeToParry);
+
+				if tostring(EstimatedTimeToReachPlayer) ~= "inf" and TimeToParry < 10 then
+					if EstimatedTimeToReachPlayer <= TimeToParry then
+						if Saved.AttemptedParry == false then
+							warn("--firing");
+							AttemptParry(OtherBall);
+							Saved.AttemptedParry = true;
+						else
+							warn("--attempted");
+						end;
+					else
+						Saved.AttemptedParry = false;
+					end;
+				end;
+			else
+				Saved.AttemptedParry = false;
+			end;
+		end;
+		Saved.LastBallPosition = OtherBall.Position;
+	end;
+	Saved.LastTick = os.clock();
+end;
+end)
+
+local Section = Tab:NewSection("AntiLag (Recommended For Mobile User)")
