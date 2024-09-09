@@ -1,0 +1,699 @@
+--// Anti Kick Idle
+task.spawn(function()
+    if not getgenv().AntiAfk == true then
+        while true do task.wait(1100);
+            pcall(function()
+                game:GetService("VirtualInputManager"):SendKeyEvent(true,"RightBracket",false,game);
+            end)
+        end
+        getgenv().AntiAfk = true;
+    end
+end)
+
+--// Fraction
+
+local Players = game:GetService("Players")
+
+local Client = Players.LocalPlayer
+local Character = Client.Character
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local originalSpeed = character.Humanoid.WalkSpeed
+local originalFov = game:GetService("Workspace").Camera.FieldOfView
+local fovEnabled = false
+local fovValue = 80
+
+local function applyFov()
+    if fovEnabled then
+        game:GetService("Workspace").Camera.FieldOfView = fovValue
+    else
+        game:GetService("Workspace").Camera.FieldOfView = originalFov
+    end
+end
+
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    character:WaitForChild("Humanoid")
+    applySpeed()
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+
+character:WaitForChild("Humanoid").Died:Connect(function()
+    applySpeed()
+    applyFov()
+end)
+local Camera = workspace.CurrentCamera
+
+local Settings = {
+	NoStun = false,
+	NoRagdoll = false,
+}
+
+local RagdollInstances = {
+	"Ragdoll",
+	"RagdollSim",
+}
+
+local StunInstances = {
+	"Freeze",
+	"Slowed",
+	"NoJump",
+	"NoBlock",
+	"ComboStun",
+	"NoVel",
+	"LaunchEnded",
+	"StopRunning",
+}
+
+local function ApplyNoStun()
+	while task.wait() do
+		if (Settings.NoStun == false) then
+			break
+		end
+		
+		RootPart.Anchored = false
+		
+		for index, Value in pairs(Character:GetChildren()) do
+			if (table.find(StunInstances, Value.Name)) then
+				Value:Destroy()
+			end
+		end
+	end
+end
+
+local function ApplyNoRagdoll()
+	while task.wait() do
+		if (Settings.NoRagdoll == false) then
+			break
+		end
+		
+		for index, Value in pairs(Character:GetChildren()) do
+			if (table.find(RagdollInstances, Value.Name)) then
+				Value:Destroy()
+			end
+		end
+	end
+end
+
+--// Settings Manager
+getgenv().Configurations = function()
+    pcall(function()
+        -- [20 Scripts]
+        getgenv().AutoKillLowestHealthPlr = false;
+        getgenv().AutoKillNearestPlr = false;
+        getgenv().AutoGiveKills = false;
+        getgenv().AutoMocking = false;
+
+        getgenv().AutoDashEffect = false;
+        getgenv().AutoFuckingGoku = false;
+        getgenv().AutoReturnSafeZone = false;
+        getgenv().AutoGarouCounterBait = false;
+        getgenv().AutoAtomicCounterBait = false;
+
+        getgenv().AutoTeleportPunching = false;
+        getgenv().AutoAimlocking = false;
+        getgenv().AutoBlocking = false;
+        getgenv().AutoDodging = false;
+        getgenv().AutoVoiding = false;
+        getgenv().AutoNoSlow = false;
+
+        getgenv().WalkspeedBypass = false;
+        getgenv().JumpPowerBypass = false;
+
+        getgenv().Aminations = false;
+        getgenv().Esp = false;
+        getgenv().Bypass = false;
+    end)
+end
+
+getgenv().Configurations();
+--// Gui
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/cracklua/cracks/m/sources/pitbull/Library/V5.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/cracklua/cracks/m/sources/pitbull/Library/V4.lua"))()
+
+--// Notify
+
+local Notify = Library:MakeNotify({
+  Title = "TwiWare",
+  Text = "Made By TwiRwal And SumitScripts As In Visual Studio",
+  Time = 5
+})
+local Notify = Library:MakeNotify({
+  Title = "TwiWare",
+  Text = "Script Loaded... | %",
+  Time = 5
+})
+
+--// Windows
+local Window = redzlib:MakeWindow({
+  Title = "TwiWare",
+  SubTitle = "By TwiRwal",
+  SaveFolder = "testando"
+})
+
+local info = Window:MakeTab({"| Information", "rbxassetid://17781992617"})
+local Tab1 = Window:MakeTab({"| Combat", "rbxassetid://18170269266"})
+local Tab2 = Window:MakeTab({"| Player/Esps/Aminations", "rbxassetid://18170270692"})
+local Tab3 = Window:MakeTab({"| Miscellaneous", "rbxassetid://18170704671"})
+
+--// Information
+local Section = info:AddSection({"Script Made By TwiRwal"})
+local Section = info:AddSection({"Gui By REDzHUB"})
+local Section = info:AddSection({"Version - 2.0.3"})
+local Section = info:AddSection({"Script Got Improve"})
+
+
+--// Combat
+local Section = Tab1:AddSection({"⚔️ Combat / Auto Framing ⚔️"})
+local Toggle = Tab1:AddToggle({
+  Name = "Auto M1 Click Combos",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoTeleportPunching = Value
+    getgenv().DetectionDistance = 55
+    getgenv().TeleportDistance = 5
+    
+    local LPlayer = game.Players.LocalPlayer
+    local CRoot
+    
+    local function UpdateCRoot()
+        local LChar = LPlayer.Character
+        if LChar then
+            CRoot = LChar:FindFirstChild("HumanoidRootPart");
+            if not CRoot then
+                LChar.ChildAdded:Wait();
+                CRoot = LChar:WaitForChild("HumanoidRootPart");
+            end
+        end
+    end
+    
+    local function FindNearest()
+        local Dist = getgenv().DetectionDistance
+        local NearestPlr = nil
+    
+        for _,v in pairs(game.Workspace.Live:GetChildren()) do
+            local Humanoid = v:FindFirstChildOfClass("Humanoid");
+            local HumanoidRoot = v:FindFirstChild("HumanoidRootPart");
+    
+            if Humanoid and HumanoidRoot and v ~= LPlayer.Character then
+                if Humanoid.Health > 0 then
+                    local Mag = (CRoot.Position - HumanoidRoot.Position).magnitude
+                    if Mag < Dist then
+                        Dist = Mag
+                        NearestPlr = HumanoidRoot
+                    end
+                end
+            end
+        end
+    
+        return NearestPlr
+    end
+    
+    task.spawn(function()
+        while getgenv().AutoTeleportPunching == true do
+            pcall(function()UpdateCRoot();
+                if workspace.Live[game.Players.LocalPlayer.Name]:FindFirstChild("M1ing") then
+                    if CRoot then
+                        local Found = FindNearest();
+                        if Found then
+                            local Target = Found.Position + -Found.CFrame.LookVector * getgenv().TeleportDistance
+                            LPlayer.Character:SetPrimaryPartCFrame(CFrame.new(Target,Target + (Found.Position - Target).unit));
+                        end
+                    end
+                end
+            end)
+            task.wait(0.015);
+        end
+    end)
+    
+    LPlayer.CharacterAdded:Connect(function()
+        task.wait(3);UpdateCRoot();
+    end)
+  end
+})
+
+local Toggle = Tab1:AddToggle({
+  Name = "Auto Aimbot Nearest",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoAimlocking = Value
+    game:GetService("RunService").RenderStepped:Connect(function() if not getgenv().AutoAimlocking == true then return end local x,b for _,v in ipairs(game:GetService("Players"):GetPlayers()) do if v.Character and v ~= game:GetService("Players").LocalPlayer then if not x or (v.Character.Head.Position - game:GetService("Players").LocalPlayer.Character.Head.Position).Magnitude < b then x = v b = (v.Character.Head.Position - game:GetService("Players").LocalPlayer.Character.Head.Position).Magnitude end end end if x and b <= 35 then game:GetService("Workspace").CurrentCamera.CFrame = CFrame.new(game:GetService("Workspace").CurrentCamera.CFrame.p, x.Character.HumanoidRootPart.Position) end end);
+  end
+})
+
+local Toggle = Tab1:AddToggle({
+  Name = "Auto Block Player",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoBlocking = Value
+
+    task.spawn(function()
+        local connection
+        connection = game:GetService("RunService").RenderStepped:Connect(function()
+            if getgenv().AutoBlocking == true then
+                pcall(function()
+                    for _,k in ipairs(workspace.Live:GetChildren()) do
+                        if k:IsA("Model") and k:FindFirstChild("Head") and k.Head:IsA("Part") and k.Head.Name == "Head" and k.Head ~= game.Players.LocalPlayer.Character.Head then
+                            if (k.Head.Position - game.Players.LocalPlayer.Character.Head.Position).magnitude <= 19.5 then
+                                if k:FindFirstChildOfClass("Humanoid") and k:FindFirstChildOfClass("Humanoid").Health > 0 then
+                                    if k:FindFirstChild("M1ing") then
+                                        local args = {[1] = {["Goal"] = "KeyPress",["Key"] = Enum.KeyCode.F}};
+                                        game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args));
+                                    else
+                                        local args = {[1] = {["Goal"] = "KeyRelease",["Key"] = Enum.KeyCode.F}};
+                                        game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args));     
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+            else
+                connection:Disconnect();
+            end
+        end)
+    end)
+  end
+})
+
+local Toggle = Tab1:AddToggle({
+  Name = "Auto Void (require grab moves)",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoVoiding = Value
+
+    local X = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame;
+    local Teleported = false;
+    
+    task.spawn(function()
+        while getgenv().AutoVoiding == true do
+            pcall(function()         
+                local ForceField = workspace.Live[game.Players.LocalPlayer.Name]:FindFirstChild("ForceField");
+                local HunterFists = workspace.Live[game.Players.LocalPlayer.Name]:FindFirstChild("HunterFists");
+                
+                if ForceField and HunterFists and not Teleported then
+                    X = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame;
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-9000,-150,9000);
+                    Teleported = true;
+                elseif not ForceField and not HunterFists and Teleported then
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = X;
+                    Teleported = false;
+                end
+            end)
+            task.wait(0.35);
+        end
+    end)
+  end
+})
+
+local Toggle = Tab1:AddToggle({
+  Name = "Auto Steal Kills",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoKillLowestHealthPlr = Value
+    getgenv().TeleportDistance = 5
+    
+    local LPlayer = game.Players.LocalPlayer
+    local CRoot
+    
+    local function UpdateCRoot()
+        local LChar = LPlayer.Character
+        if LChar then
+            CRoot = LChar:FindFirstChild("HumanoidRootPart");
+            if not CRoot then
+                LChar.ChildAdded:Wait();
+                CRoot = LChar:WaitForChild("HumanoidRootPart");
+            end
+        end
+    end
+    
+    local function isPlayer(X)
+        return game.Players:GetPlayerFromCharacter(X) ~= nil
+    end
+    
+    local function FindLowestHealth()
+        local LowestHealth = math.huge
+        local NearestPlr = nil
+    
+        for _,v in pairs(game.Workspace.Live:GetChildren()) do
+            if isPlayer(v) then
+                local Humanoid = v:FindFirstChildOfClass("Humanoid");
+                local HumanoidRoot = v:FindFirstChild("HumanoidRootPart");
+    
+                if Humanoid and HumanoidRoot and v ~= LPlayer.Character then
+                    if Humanoid.Health > 0 and Humanoid.Health <= 35  then
+                        LowestHealth = Humanoid.Health;NearestPlr = HumanoidRoot;
+                    end
+                end
+            end
+        end
+    
+        return NearestPlr
+    end
+    
+    task.spawn(function()
+        while getgenv().AutoKillLowestHealthPlr == true  do
+            pcall(function()UpdateCRoot();
+                if CRoot then
+                    local Found = FindLowestHealth();
+                    if Found then
+                        LPlayer.Character:SetPrimaryPartCFrame(CFrame.new(Found.Position - Vector3.new(0,Found.Size.Y/2,0) - Found.CFrame.LookVector * getgenv().TeleportDistance + Vector3.new(0,-6,0),Found.Position - Vector3.new(0,Found.Size.Y/2,0)));
+                        if not workspace.Live:FindFirstChild(Found.Parent.Name):FindFirstChild("RagdollSim") and not workspace.Live:FindFirstChild(Found.Parent.Name):FindFirstChild("AbsoluteImmortal") then
+                            task.spawn(function()
+                                local args = {[1] = {["Goal"] = "LeftClick",["Mobile"] = true}};
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args));
+                                local args = {[1] = {["Goal"] = "LeftClickRelease",["Mobile"] = true}};
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args));
+                            end)
+    
+                            for _,x in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                                if x:IsA("Tool") and x.Name ~= "Prey's Peril" and x.Name ~= "Split Second Counter" then
+                                    game.Players.LocalPlayer.Character:WaitForChild("Humanoid"):EquipTool(x);x:Activate();
+                                    game.Players.LocalPlayer.Character:WaitForChild("Humanoid"):UnequipTools();
+                                end
+                            end
+                        end
+                    else
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(67.89816284179688,613.1607666015625,-443.03302001953125);
+                    end
+                end
+            end)
+            task.wait(0.015);
+        end
+    end)
+
+    LPlayer.CharacterAdded:Connect(function()
+        task.wait(1.5);UpdateCRoot();
+    end)
+end
+})
+
+
+local Toggle = Tab1:AddToggle({
+  Name = "Auto Fram Nearest",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoKillNearestPlr = Value
+    getgenv().TeleportDistance = 5
+
+    task.spawn(function()
+        if getgenv().AutoKillNearestPlr == false then
+            game.Players.LocalPlayer.Character.Humanoid.RootPart.CFrame = game.Players.LocalPlayer.Character.Humanoid.RootPart.CFrame * CFrame.new(0,20,-20);
+        end
+    end)
+    
+    local LPlayer = game.Players.LocalPlayer
+    local CRoot
+    
+    local function UpdateCRoot()
+        local LChar = LPlayer.Character
+        if LChar then
+            CRoot = LChar:FindFirstChild("HumanoidRootPart");
+            if not CRoot then
+                LChar.ChildAdded:Wait();
+                CRoot = LChar:WaitForChild("HumanoidRootPart");
+            end
+        end
+    end
+
+    local function isPlayer(X)
+        return game.Players:GetPlayerFromCharacter(X) ~= nil
+    end
+    
+    local function FindNearest()
+        local Dist = math.huge
+        local NearestPlr = nil
+    
+        for _,v in pairs(game.Workspace.Live:GetChildren()) do
+            if isPlayer(v) then
+                local Humanoid = v:FindFirstChildOfClass("Humanoid");
+                local HumanoidRoot = v:FindFirstChild("HumanoidRootPart");
+        
+                if Humanoid and HumanoidRoot and v ~= LPlayer.Character then
+                    if Humanoid.Health > 0 then
+                        local Mag = (CRoot.Position - HumanoidRoot.Position).magnitude
+                        if Mag < Dist then
+                            Dist = Mag;NearestPlr = HumanoidRoot;
+                        end
+                    end
+                end
+            end
+        end
+    
+        return NearestPlr
+    end
+
+    task.spawn(function()
+        while getgenv().AutoKillNearestPlr == true  do
+            pcall(function()UpdateCRoot();
+                if CRoot then
+                    local Found = FindNearest();
+                    if Found then
+                        LPlayer.Character:SetPrimaryPartCFrame(CFrame.new(Found.Position - Vector3.new(0,Found.Size.Y/2,0) - Found.CFrame.LookVector * getgenv().TeleportDistance + Vector3.new(0,-6,0),Found.Position - Vector3.new(0,Found.Size.Y/2,0)));
+                        if not workspace.Live:FindFirstChild(Found.Parent.Name):FindFirstChild("RagdollSim") and not workspace.Live:FindFirstChild(Found.Parent.Name):FindFirstChild("AbsoluteImmortal") then
+                            task.spawn(function()
+                                local args = {[1] = {["Goal"] = "LeftClick",["Mobile"] = true}};
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args));
+                                local args = {[1] = {["Goal"] = "LeftClickRelease",["Mobile"] = true}};
+                                game:GetService("Players").LocalPlayer.Character.Communicate:FireServer(unpack(args));
+                            end)
+
+                            for _,x in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+                                if x:IsA("Tool") and x.Name ~= "Prey's Peril" and x.Name ~= "Split Second Counter" then
+                                    game.Players.LocalPlayer.Character:WaitForChild("Humanoid"):EquipTool(x);x:Activate();
+                                    game.Players.LocalPlayer.Character:WaitForChild("Humanoid"):UnequipTools();
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+            task.wait(0.015);
+        end
+    end)
+    
+    LPlayer.CharacterAdded:Connect(function()
+        task.wait(1.5);UpdateCRoot();
+    end)
+  end
+})
+
+local Toggle = Tab1:AddToggle({
+  Name = "Auto Give Kills (Helps Players)",
+  Default = false,
+  Callback = function(Value)
+    getgenv().AutoGiveKills = Value
+
+    task.spawn(function()
+        while getgenv().AutoGiveKills == true do
+            pcall(function()
+                if workspace.Live[game.Players.LocalPlayer.Name]:FindFirstChild("Humanoid").MaxHealth ~= workspace.Live[game.Players.LocalPlayer.Name]:FindFirstChild("Humanoid").Health then
+                    game.Players.LocalPlayer.Character.Humanoid.Health = 0;
+                end
+            end)
+            task.wait(0.35);
+        end
+    end)
+end
+})
+
+--// Player & Esp & Aminations
+local Section = Tab2:AddSection({"👤Local-Player👤"})
+
+local Toggle = Tab2:AddToggle({
+  Name = "SuperSpeedBypass",
+  Default = false,
+  Callback = function(Value)
+    getgenv().WalkspeedBypass = Value
+
+    -- Got From https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source
+    task.spawn(function()
+        while getgenv().WalkspeedBypass == true and game:GetService("Players").LocalPlayer do
+            pcall(function()
+                local chr = game:GetService("Players").LocalPlayer.Character
+                if chr then
+                   local hum = chr:FindFirstChildWhichIsA("Humanoid");
+                    if hum and hum.Parent then
+                        local hb = game:GetService("RunService").Heartbeat
+                        local delta = hb:Wait()
+                        if hum.MoveDirection.Magnitude > 0 then
+                            chr:TranslateBy(hum.MoveDirection * 12 * delta * 10);
+                        else
+                            chr:TranslateBy(hum.MoveDirection * delta * 10);
+                        end
+                    end
+                end
+            end)
+            task.wait(0.0015);
+        end
+    end)
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "SuperJumpBypass",
+  Default = false,
+  Callback = function(Value)
+    getgenv().JumpPowerBypass = Value
+
+    task.spawn(function()
+        while getgenv().JumpPowerBypass == true do
+            pcall(function()
+                if game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):GetState() == Enum.HumanoidStateType.Jumping then
+                    game.Players.LocalPlayer.Character.Humanoid.RootPart.CFrame = game.Players.LocalPlayer.Character.Humanoid.RootPart.CFrame * CFrame.new(0,190,0);
+                end
+            end)
+            task.wait(0.0015);
+        end
+    end)
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "Field of View'",
+  Default = false,
+  Callback = function(state)
+     if state then
+        game.Workspace.CurrentCamera.FieldOfView = 120
+    else
+        game.Workspace.CurrentCamera.FieldOfView = 80
+    end
+end
+})
+
+local Section = Tab2:AddSection({"◽Anti"})
+local Toggle = Tab2:AddToggle({
+  Name = "AntiSlow",
+  Default = false,
+  Callback = function(Value)
+  getgenv().AutoNoSlow = Value
+
+    task.spawn(function()
+        local connection
+        connection = game:GetService("RunService").RenderStepped:Connect(function()
+            if getgenv().AutoNoSlow == true then
+                pcall(function()
+                    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 25;
+                end)
+            else
+                connection:Disconnect();
+            end
+        end)
+    end)
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "AntiStun (Have 8 Antis)",
+  Default = false,
+  Callback = function(state)
+    			if (Settings.NoStun == false) then
+				print("NoStun true")
+				Settings.NoStun = true
+				
+				ApplyNoStun()
+			else
+				print("NoStun false")
+				Settings.NoStun = false
+			end
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "AntiRagDoll",
+  Default = false,
+  Callback = function(state)
+    			if (Settings.NoRagdoll == false) then
+				print("NoRagdoll true")
+				Settings.NoRagdoll = true
+				
+				ApplyNoRagdoll()
+			else
+				warn("NoRagdoll false")
+				Settings.NoRagdoll = false
+			end
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "AntiFling",
+  Default = false,
+  Callback = function(state)
+if state then
+loadstring(game:HttpGet("https://gitlab.com/ivanovpogorely/2323313frrf/-/raw/main/Anti_Fling.lua"))()
+elseif not state then
+local h, n = sethiddenprop or sethiddenproperty or set_hidden_prop, "Default^0^511"
+h(workspace,"CollisionGroups",n)
+
+_G.Activo = false
+repeat wait()
+for i, v in pairs(game.Players:GetDescendants()) do
+if v.Name == "InSide" then
+v:Destroy()
+end
+end
+for i, v in pairs(game.Players:GetDescendants()) do
+if v.Name == "Cap" then
+v:Destroy()
+end
+end
+until _G.Activo == false
+end
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "AntiKill",
+  Default = false,
+  Callback = function(state)
+    if state then
+    loadstring(game:HttpGet("https://gitlab.com/ivanovpogorely/2323313frrf/-/raw/main/Anti_Kill.lua"))()
+    elseif not state then
+    end
+end
+})
+local Toggle = Tab2:AddToggle({
+  Name = "Extra Range",
+  Default = false,
+  Callback = function(Value)
+	local player = game.Players.LocalPlayer
+	local Char = player.Character
+
+	while  wait() do
+		if Char:FindFirstChild("NoRotate") then
+			Char.NoRotate:Destroy()
+		end
+	end
+end
+})
+
+local Section = Tab2:AddSection({"◽Esp"})
+local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/cracklua/cracks/m/sources/pitbull/Scripts/Esp.lua"))()
+
+ESP:Toggle(false)
+
+local Toggle = Tab2:AddToggle({
+    Name = "Enable Esp",
+    Default = false,
+    Callback = function(Value)
+        ESP:Toggle(Value)
+    end
+})
+
+local Section = Tab2:AddSection({"◽Esp Options"})
+
+local Toggle = Tab2:AddToggle({
+    Name = "Name Esp",
+    Default = false,
+    Callback = function(Value)
+        ESP.Names = Value
+    end
+})
+
+local Toggle = Tab2:AddToggle({
+    Name = "Box Esp",
+    Default = false,
+    Callback = function(Value)
+        ESP.Boxes = Value
+    end
+})
+
+local Section = Tab2:AddSection({"Aminations"})
