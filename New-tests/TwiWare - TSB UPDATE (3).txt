@@ -585,21 +585,6 @@ local Toggle = Tab2:AddToggle({
 end
 })
 local Toggle = Tab2:AddToggle({
-  Name = "AntiStun (Have 8 Antis)",
-  Default = false,
-  Callback = function(state)
-    			if (Settings.NoStun == false) then
-				print("NoStun true")
-				Settings.NoStun = true
-				
-				ApplyNoStun()
-			else
-				print("NoStun false")
-				Settings.NoStun = false
-			end
-end
-})
-local Toggle = Tab2:AddToggle({
   Name = "AntiRagDoll",
   Default = false,
   Callback = function(state)
